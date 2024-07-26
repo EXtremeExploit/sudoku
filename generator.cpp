@@ -1,9 +1,16 @@
 #include "generator.hpp"
 #include "sudoku.hpp"
 
-int randomGenerator(int num)
+#include <random>
+
+int randomGenerator(int min, int max)
 {
-    return (int)std::floor((float)(rand() / double(RAND_MAX) * num + 1));
+    std::random_device dev;
+    std::mt19937 rng(dev());
+
+    std::uniform_int_distribution<std::mt19937::result_type> dist(min,max);
+    int res = dist(rng);
+    return res;
 }
 
 bool unUsedInBox(BoardType& board, int rowStart, int colStart, int num)
@@ -24,7 +31,7 @@ void fillBox(BoardType& board, int row, int col)
     for (int i = 0; i < BOX_SIZE; i++) {
         for (int j = 0; j < BOX_SIZE; j++) {
             do {
-                num = randomGenerator(BOARD_SIZE);
+                num = randomGenerator(1,BOARD_SIZE);
             } while (!unUsedInBox(board, row, col, num));
             board[row + i][col + j].num = num;
         }

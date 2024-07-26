@@ -1,134 +1,7 @@
 #include "sudoku.hpp"
 #include "generator.hpp"
-
-#include <set>
-
-int printBoard(BoardType& board, Selected& sel)
-{
-    for (int y = 0; y < BOARD_SIZE; y++) {
-        for (int x = 0; x < BOARD_SIZE; x++) {
-            if (x % BOX_SIZE == 0 && x != 0) {
-                printw(" | ");
-            }
-            if (y % BOX_SIZE == 0 && y != 0 && x == 0) {
-                printw("----- | ----- | -----\n");
-            }
-
-            uint8_t num = board[x][y].num;
-
-            uint8_t color = 0;
-
-            if (x == sel.x || y == sel.y)
-                color = COL_SAME_SEL_AXIS;
-            if (sel.num == num)
-                color = COL_SAME_SEL_NUM;
-            if (sel.x == x && sel.y == y)
-                color = COL_SELECTED;
-
-            if (color)
-                attron(COLOR_PAIR(color));
-
-            if (board[x][y].locked) {
-                attron(A_BOLD);
-            }
-
-            char num_str = num ? '0' + num : ' ';
-            printw("%c", num_str);
-
-            if (color)
-                attroff(COLOR_PAIR(color));
-
-            if (board[x][y].locked) {
-                attroff(A_BOLD);
-            }
-
-            if (x == BOARD_SIZE - 1)
-                continue;
-
-            if (x == 0 || (x + 1) % BOX_SIZE != 0)
-                printw("|");
-        }
-        printw("\n");
-    }
-
-    return 0;
-}
-
-int printSelDialog(Selected& sel)
-{
-    for (int i = 1; i <= BOARD_SIZE; i++) {
-
-        if (sel.num == i)
-            attron(COLOR_PAIR(COL_SELECTED));
-
-        printw("%d", i);
-
-        if (sel.num == i)
-            attroff(COLOR_PAIR(COL_SELECTED));
-        printw(" ");
-    }
-    return 0;
-}
-
-bool isValid(BoardType& board)
-{
-    // Check horizontally
-    for (uint8_t y = 0; y < BOARD_SIZE; y++) {
-        std::set<int> row = {};
-
-        for (uint8_t x = 0; x < BOARD_SIZE; x++) {
-            auto num = board[x][y].num;
-
-            // 0 check is done here because its the first step and checking again somewhere else is useless
-            if (num == 0)
-                return false;
-
-            if (row.insert(num).second == false)
-                return false;
-        }
-    }
-
-    // Check vertically
-    for (uint8_t x = 0; x < BOARD_SIZE; x++) {
-        std::set<int> column = {};
-
-        for (uint8_t y = 0; y < BOARD_SIZE; y++) {
-            auto num = board[x][y].num;
-
-            if (column.insert(num).second == false)
-                return false;
-        }
-    }
-
-    // Check box
-    for (uint8_t x = 1; x < BOARD_SIZE; x += BOX_SIZE) {
-        for (uint8_t y = 1; y < BOARD_SIZE; y += BOX_SIZE) {
-            std::set<int> box;
-            if (box.insert(board[x - 1][y - 1].num).second == false)
-                return false;
-            if (box.insert(board[x][y - 1].num).second == false)
-                return false;
-            if (box.insert(board[x + 1][y - 1].num).second == false)
-                return false;
-
-            if (box.insert(board[x - 1][y].num).second == false)
-                return false;
-            if (box.insert(board[x][y].num).second == false)
-                return false;
-            if (box.insert(board[x + 1][y].num).second == false)
-                return false;
-
-            if (box.insert(board[x - 1][y + 1].num).second == false)
-                return false;
-            if (box.insert(board[x][y + 1].num).second == false)
-                return false;
-            if (box.insert(board[x + 1][y + 1].num).second == false)
-                return false;
-        }
-    }
-
-    return true;
-}
+#include "prints.hpp"
+#include "validator.hpp"
 
 int main(int, char**)
 {
@@ -164,6 +37,7 @@ int main(int, char**)
     keypad(stdscr, TRUE);
 
     while (true) {
+        bool boardChanged = false;
         clear(); // Clear console
         printBoard(board, sel);
         printw("\n");
@@ -191,7 +65,6 @@ int main(int, char**)
                 if (sel.x < BOARD_SIZE - 1)
                     sel.x++;
                 break;
-
             case '1':
                 sel.num = 1;
                 break;
@@ -225,19 +98,26 @@ int main(int, char**)
             case '\n':
                 if (board[sel.x][sel.y].locked)
                     break;
+
                 board[sel.x][sel.y].num = sel.num;
+                boardChanged = true;
                 break;
 
             case KEY_BACKSPACE:
+            case '0':
                 if (board[sel.x][sel.y].locked)
                     break;
 
                 board[sel.x][sel.y].num = 0;
+                boardChanged = true;
                 break;
         }
-        auto valid = isValid(board);
-        if (valid)
-            break;
+
+        if (boardChanged) {
+            auto valid = isValid(board);
+            if (valid)
+                break;
+        }
     }
 
     return 0;
