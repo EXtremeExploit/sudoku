@@ -6,7 +6,6 @@
 
 #define BOARD_SIZE 9
 const int BOX_SIZE = std::sqrt(BOARD_SIZE);
-#define EMPTY 0
 
 typedef struct Cell {
     uint8_t num;
